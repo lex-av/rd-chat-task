@@ -1,0 +1,22 @@
+# Standard workflow for code quality and tests
+
+name: CI
+
+on: push
+
+jobs:
+  code_quality:
+    runs-on: ubuntu-latest
+    name: Checks with black, flake8, isort and possibly run tests
+    container: python:3.8
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Run script
+        run: |
+          pip install flake8 isort pytest pytest-cov pytest-freezegun
+          ls -la
+          flake8 .
+          isort --check .
+          pytest -v
