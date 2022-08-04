@@ -36,24 +36,26 @@ async def remove_user(user_name: str, users_mapping: dict):
     users_mapping.pop(user_name)
 
 
-async def register_user(username: str, user_ws, users_mapping: dict):
+async def register_user(user_ws, users_mapping: dict):
     """
-    Allows user to register on server by entering hit own username. If
-    username is already in use func informs user about it and offers user
-    to try again
-    :param username: Username in str, given by connected user
+    Allows user to register on server by entering hit own username. Gets
+    username from connected user. If username is already in use func informs
+    user about it and offers user to try again
     :param user_ws: Connected user's websocket
     :param users_mapping: Server mapping from username to it's websocket
     :return: None
     """
 
-    add_user_ok = await add_user(user_ws, username, users_mapping)
+    while True:
+        current_username = await user_ws.recv()
+        add_user_ok = await add_user(user_ws, current_username, users_mapping)
 
-    if add_user_ok:
-        await user_ws.send("1")
-        print("users: ", users_mapping)  # DEBUG, DELETE LATER
-    else:
-        await user_ws.send("0")
+        if add_user_ok:
+            await user_ws.send("1")
+            print("users: ", users_mapping)  # DEBUG, DELETE LATER
+            return current_username
+        else:
+            await user_ws.send("0")
 
 
 async def user_choose_mode(user_ws, username: str, awaiting_users: set):
@@ -85,8 +87,7 @@ async def user_connection_handler(websocket):
     :param websocket: connected user websocket
     """
 
-    current_username = await websocket.recv()  # Get username from user
-    await register_user(current_username, websocket, USERS_MAPPING)
+    current_username = await register_user(websocket, USERS_MAPPING)
     await user_choose_mode(websocket, current_username, AWAITING_USERS)
     await remove_user(current_username, USERS_MAPPING)
 
