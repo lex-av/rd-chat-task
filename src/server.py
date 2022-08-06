@@ -1,5 +1,4 @@
 import asyncio
-import json
 import logging
 
 import websockets
@@ -63,48 +62,6 @@ async def register_user(user_ws, users_mapping: dict):
             await user_ws.send("0")
 
 
-async def get_user_mode(user_ws, users_mapping: dict):
-    """
-    User chooses between connection to another user or to
-    stand by a connection from another user
-
-    :param user_ws: Connected user's websocket
-    :param username: Username in str, given by connected user
-    :param awaiting_users: Server set of users in connection awaiting mode
-     corresponding websockets
-    :return: True for connect to another user, False to wait for connection
-    """
-
-    current_mode = json.loads(await user_ws.recv())
-    print(current_mode)
-    user_exists = current_mode["username"] in users_mapping
-    if current_mode["mode"] == "active":
-        while True:
-            if user_exists:
-                await user_ws.send("1")
-                break
-            else:
-                await user_ws.send("0")
-    else:
-        await user_ws.send("1")
-
-    return current_mode
-
-
-async def message_handler_passive():
-    """
-
-    :return:
-    """
-
-
-async def message_handler_active():
-    """
-
-    :return:
-    """
-
-
 async def user_connection_handler(websocket):
     """
     Main server handler for incoming connections and
@@ -114,25 +71,17 @@ async def user_connection_handler(websocket):
     """
 
     current_username = await register_user(websocket, USERS_MAPPING)
-    user_mode = await get_user_mode(websocket, USERS_MAPPING)
 
-    print("usermode chosen")
-    print(user_mode)
-    if user_mode["mode"] == "active":
-        print("active")
-        destination_user = USERS_MAPPING[user_mode["username"]]
-        while True:
-            msg = await websocket.recv()
-            await destination_user.send(msg)
+    try:
+        while 1:
+            new_msg = await websocket.recv()
+            await asyncio.wait(
+                [asyncio.create_task(ws.send(f"[{current_username}] {new_msg}")) for ws in USERS_MAPPING.values()]
+            )
 
-    else:
-        print("passive")
-        while True:
-            source_user = USERS_MAPPING[user_mode["username"]]
-            msg = await source_user.recv()
-            await websocket.send(msg)
-
-    await remove_user(current_username, USERS_MAPPING)
+    except websockets.ConnectionClosedOK:
+        await remove_user(current_username, USERS_MAPPING)
+        print(current_username, " disconnected")
 
 
 async def main():
