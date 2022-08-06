@@ -1,6 +1,7 @@
 import threading
 
 import websocket
+from websockets import WebSocketClientProtocol
 
 
 def verify_username(username: str) -> int:
@@ -44,7 +45,7 @@ def generate_verification_msg(code: int) -> str:
     return "Username OK"
 
 
-def register(server_ws) -> str:
+def register(server_ws: WebSocketClientProtocol) -> str:
     """
     Tries to register on server by given username
     :param server_ws: Selected server's websocket
@@ -68,7 +69,40 @@ def register(server_ws) -> str:
             print("Username is already in use")
 
 
-def print_server_answers(ws) -> None:
+def pair_with_user(server_ws: WebSocketClientProtocol) -> None:
+    """
+    Asks user to enter destination username to send messages. If
+    destination username exists, user enters into message sending and
+    receiving stage. Suppresses all messages from server that are not
+    registration status codes
+
+    :param server_ws: Selected server's websocket
+    :return: None
+    """
+
+    while True:
+        destination_username = input("Enter destination username ")
+        verify_code = verify_username(destination_username)
+        if verify_code == 0:
+            server_ws.send(destination_username)
+            while True:
+                user_name_answer = server_ws.recv()
+                if user_name_answer != "0" and user_name_answer != "1":
+                    continue
+                else:
+                    break
+        else:
+            print(generate_verification_msg(verify_code))
+            continue
+
+        if bool(int(user_name_answer)):
+            print(f"Username exists. Messages will be forwarded to {destination_username}")
+            break
+        else:
+            print("Username does not exist")
+
+
+def print_server_answers(ws: WebSocketClientProtocol) -> None:
     """
     Function to listen server answers to client
     messages and print them. This function has to run
@@ -90,6 +124,7 @@ if __name__ == "__main__":
 
     # Register user on server
     register(ws)
+    pair_with_user(ws)
 
     # Launch thread to print server messages
     msg_thread = threading.Thread(target=print_server_answers, args=[ws])
@@ -100,7 +135,10 @@ if __name__ == "__main__":
     try:
         while 1:
             msg = input()
+            if msg == ":quit:":
+                raise KeyboardInterrupt
             ws.send(msg)
 
     except KeyboardInterrupt:
+        ws.send(":quit:")
         ws.close()

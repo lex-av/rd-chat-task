@@ -2,15 +2,17 @@ import asyncio
 import logging
 
 import websockets
+from websockets import WebSocketServerProtocol
 
 USERS_MAPPING = {}  # Maps username to it's websocket
 
-logger = logging.getLogger("websockets")
-logger.setLevel(logging.DEBUG)
-logger.addHandler(logging.StreamHandler())
+logging.basicConfig(
+    format="%(message)s",
+    level=logging.DEBUG,
+)
 
 
-async def add_user(user_websocket, user_name: str, users_mapping: dict) -> bool:
+async def add_user(user_websocket: WebSocketServerProtocol, user_name: str, users_mapping: dict) -> bool:
     """
     Adds new user to user mapper. Returns True if user was
     added and False otherwise. Prevents adding username, that
@@ -29,7 +31,7 @@ async def add_user(user_websocket, user_name: str, users_mapping: dict) -> bool:
         return True
 
 
-async def remove_user(user_name: str, users_mapping: dict):
+def remove_user(user_name: str, users_mapping: dict):
     """
 
     :param user_name:
@@ -40,7 +42,7 @@ async def remove_user(user_name: str, users_mapping: dict):
     users_mapping.pop(user_name)
 
 
-async def register_user(user_ws, users_mapping: dict):
+async def register_user(user_ws: WebSocketServerProtocol, users_mapping: dict) -> str:
     """
     Allows user to register on server by entering his own username. Gets
     username from connected user. Uses codes "1" and "0" to inform user
@@ -62,7 +64,25 @@ async def register_user(user_ws, users_mapping: dict):
             await user_ws.send("0")
 
 
-async def user_connection_handler(user_websocket):
+async def pair_users(user_ws: WebSocketServerProtocol, users_mapping: dict) -> str:
+    """
+
+    :param user_ws:
+    :param users_mapping:
+    :return:
+    """
+
+    while True:
+        destination_username = await user_ws.recv()
+
+        if destination_username in users_mapping.keys():
+            await user_ws.send("1")
+            return destination_username
+        else:
+            await user_ws.send("0")
+
+
+async def user_connection_handler(user_websocket: WebSocketServerProtocol):
     """
     Main server handler for incoming connections and
     messages routing
@@ -72,24 +92,29 @@ async def user_connection_handler(user_websocket):
 
     try:
         sender = await register_user(user_websocket, USERS_MAPPING)
+        recipient = await pair_users(user_websocket, USERS_MAPPING)
 
         try:
             while 1:
-                # Broadcast received message to all connected users except sender
-                new_msg = await user_websocket.recv()
-                users_to_send = [user for user in USERS_MAPPING if user != sender]
-                sending_tasks = [
-                    asyncio.create_task(USERS_MAPPING[user].send(f"[{sender}] {new_msg}")) for user in users_to_send
-                ]
+                sender_data = await user_websocket.recv()
 
-                # Message sent to users notification as separate task
-                msg_to_sender = "[server] Message sent to users"  # Special message to sender
-                sending_tasks.append(asyncio.create_task(USERS_MAPPING[sender].send(msg_to_sender)))
-                await asyncio.wait(sending_tasks)
+                if sender_data == ":quit:" or len(USERS_MAPPING) < 2:
+                    raise websockets.ConnectionClosedOK(1000, 1000)
+
+                sender_msg = f"[{sender}] " + sender_data
+                msg_to_sender = "[server] Message sent to user"
+
+                sender_ws = USERS_MAPPING[sender]
+                recipient_ws = USERS_MAPPING[recipient]
+
+                await recipient_ws.send(sender_msg)
+                await sender_ws.send(msg_to_sender)
 
         except websockets.ConnectionClosedOK:  # Handle user disconnect while messaging
-            await remove_user(sender, USERS_MAPPING)
-            print(sender, " disconnected")
+            remove_user(sender, USERS_MAPPING)
+            if len(USERS_MAPPING) > 1:  # Proper user quit and disconnect
+                await USERS_MAPPING[recipient].send("[server] User left")
+                print(sender, " disconnected")
 
     except websockets.ConnectionClosedError:  # Handle user register fail
         print("User connection failed")
