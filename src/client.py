@@ -91,7 +91,7 @@ if __name__ == "__main__":
     # Register user on server
     register(ws)
 
-    # Launch thread to spint server messages
+    # Launch thread to print server messages
     msg_thread = threading.Thread(target=print_server_answers, args=[ws])
     msg_thread.daemon = True  # For ctrl-c termination
     msg_thread.start()

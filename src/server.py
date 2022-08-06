@@ -82,7 +82,7 @@ async def user_connection_handler(user_websocket):
                     asyncio.create_task(USERS_MAPPING[user].send(f"[{sender}] {new_msg}")) for user in users_to_send
                 ]
 
-                # Message delivered notification as separate task
+                # Message sent to users notification as separate task
                 msg_to_sender = "[server] Message sent to users"  # Special message to sender
                 sending_tasks.append(asyncio.create_task(USERS_MAPPING[sender].send(msg_to_sender)))
                 await asyncio.wait(sending_tasks)
