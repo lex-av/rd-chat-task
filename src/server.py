@@ -71,18 +71,27 @@ async def user_connection_handler(user_websocket):
     """
 
     try:
-        current_username = await register_user(user_websocket, USERS_MAPPING)
+        sender = await register_user(user_websocket, USERS_MAPPING)
 
         try:
             while 1:
+                # Broadcast received message to all connected users except sender
                 new_msg = await user_websocket.recv()
-                await asyncio.wait(
-                    [asyncio.create_task(ws.send(f"[{current_username}] {new_msg}")) for ws in USERS_MAPPING.values()]
-                )
+                users_to_send = [user for user in USERS_MAPPING if user != sender]
+                print(users_to_send)
+                msg_to_sender = "[server] Message sent to users"  # Special message to sender
+                sending_tasks = [
+                    asyncio.create_task(USERS_MAPPING[user].send(f"[{sender}] {new_msg}")) for user in users_to_send
+                ]
+
+                # Message delivered notification as separate task
+                sending_tasks.append(asyncio.create_task(USERS_MAPPING[sender].send(msg_to_sender)))
+
+                await asyncio.wait(sending_tasks)
 
         except websockets.ConnectionClosedOK:  # Handle user disconnect while messaging
-            await remove_user(current_username, USERS_MAPPING)
-            print(current_username, " disconnected")
+            await remove_user(sender, USERS_MAPPING)
+            print(sender, " disconnected")
     except websockets.ConnectionClosedError:
         print("User connection failed")
 
