@@ -18,7 +18,7 @@ async def add_user(user_websocket, user_name: str, users_mapping: dict) -> bool:
 
     :param user_websocket: Connected user's websocket
     :param user_name: Username, given by user
-    :param users_mapping: Server mapping from username to it's websocket
+    :param users_mapping: Server mapping username->websocket
     :return: bool
     """
 
@@ -42,9 +42,9 @@ async def remove_user(user_name: str, users_mapping: dict):
 
 async def register_user(user_ws, users_mapping: dict):
     """
-    Allows user to register on server by entering hit own username. Gets
-    username from connected user. If username is already in use func informs
-    user about it and offers user to try again
+    Allows user to register on server by entering his own username. Gets
+    username from connected user. Uses codes "1" and "0" to inform user
+    about registration status
     :param user_ws: Connected user's websocket
     :param users_mapping: Server mapping from username to it's websocket
     :return: None
@@ -62,26 +62,29 @@ async def register_user(user_ws, users_mapping: dict):
             await user_ws.send("0")
 
 
-async def user_connection_handler(websocket):
+async def user_connection_handler(user_websocket):
     """
     Main server handler for incoming connections and
     messages routing
 
-    :param websocket: connected user websocket
+    :param user_websocket: connected user websocket
     """
 
-    current_username = await register_user(websocket, USERS_MAPPING)
-
     try:
-        while 1:
-            new_msg = await websocket.recv()
-            await asyncio.wait(
-                [asyncio.create_task(ws.send(f"[{current_username}] {new_msg}")) for ws in USERS_MAPPING.values()]
-            )
+        current_username = await register_user(user_websocket, USERS_MAPPING)
 
-    except websockets.ConnectionClosedOK:
-        await remove_user(current_username, USERS_MAPPING)
-        print(current_username, " disconnected")
+        try:
+            while 1:
+                new_msg = await user_websocket.recv()
+                await asyncio.wait(
+                    [asyncio.create_task(ws.send(f"[{current_username}] {new_msg}")) for ws in USERS_MAPPING.values()]
+                )
+
+        except websockets.ConnectionClosedOK:  # Handle user disconnect while messaging
+            await remove_user(current_username, USERS_MAPPING)
+            print(current_username, " disconnected")
+    except websockets.ConnectionClosedError:
+        print("User connection failed")
 
 
 async def main():
