@@ -123,8 +123,11 @@ if __name__ == "__main__":
     ws.connect("ws://localhost:2024")
 
     # Register user on server
-    register(ws)
-    pair_with_user(ws)
+    try:
+        register(ws)
+        pair_with_user(ws)
+    except KeyboardInterrupt:
+        exit()
 
     # Launch thread to print server messages
     msg_thread = threading.Thread(target=print_server_answers, args=[ws])
