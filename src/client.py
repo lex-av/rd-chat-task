@@ -1,7 +1,7 @@
 import threading
 
 import websocket
-from websockets import WebSocketClientProtocol
+from websocket import WebSocket, WebSocketConnectionClosedException
 
 
 def verify_username(username: str) -> int:
@@ -45,7 +45,7 @@ def generate_verification_msg(code: int) -> str:
     return "Username OK"
 
 
-def register(server_ws: WebSocketClientProtocol) -> str:
+def register(server_ws: WebSocket) -> str:
     """
     Tries to register on server by given username
     :param server_ws: Selected server's websocket
@@ -69,7 +69,7 @@ def register(server_ws: WebSocketClientProtocol) -> str:
             print("Username is already in use")
 
 
-def pair_with_user(server_ws: WebSocketClientProtocol) -> None:
+def pair_with_user(server_ws: WebSocket) -> None:
     """
     Asks user to enter destination username to send messages. If
     destination username exists, user enters into message sending and
@@ -102,7 +102,7 @@ def pair_with_user(server_ws: WebSocketClientProtocol) -> None:
             print("Username does not exist")
 
 
-def print_server_answers(ws: WebSocketClientProtocol) -> None:
+def print_server_answers(ws: WebSocket) -> None:
     """
     Function to listen server answers to client
     messages and print them. This function has to run
@@ -113,20 +113,33 @@ def print_server_answers(ws: WebSocketClientProtocol) -> None:
     """
 
     while 1:
-        srv_answer = ws.recv()
+        try:
+            srv_answer = ws.recv()
+        except WebSocketConnectionClosedException:  # Standalone exception catch for thread
+
+            break
         print(srv_answer)
 
 
 if __name__ == "__main__":
     # Initialise server websocket
     ws = websocket.WebSocket()
-    ws.connect("ws://localhost:2024")
 
-    # Register user on server
+    try:  # Check if server is online
+        ws.connect("ws://localhost:2024")
+    except WebSocketConnectionClosedException:
+        print("Server if offline")
+        exit()
+
+    # Register user on server and pair him with another
     try:
-        register(ws)
-        pair_with_user(ws)
-    except KeyboardInterrupt:
+        try:
+            register(ws)
+            pair_with_user(ws)
+        except WebSocketConnectionClosedException:  # Check if server still online / responds
+            print("Server not responding")
+            exit()
+    except KeyboardInterrupt:  # Proper exit on ctrl-c
         exit()
 
     # Launch thread to print server messages
@@ -140,8 +153,13 @@ if __name__ == "__main__":
             msg = input()
             if msg == ":quit:":
                 raise KeyboardInterrupt
-            ws.send(msg)
 
-    except KeyboardInterrupt:
+            try:
+                ws.send(msg)
+            except WebSocketConnectionClosedException:  # Check if server still online / responds
+                print("Server not responding")
+                exit()
+
+    except KeyboardInterrupt:  # Proper exit on ctrl-c
         ws.send(":quit:")
         ws.close()
