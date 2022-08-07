@@ -115,10 +115,9 @@ def print_server_answers(ws: WebSocket) -> None:
     while 1:
         try:
             srv_answer = ws.recv()
+            print(srv_answer)
         except WebSocketConnectionClosedException:  # Standalone exception catch for thread
-
             break
-        print(srv_answer)
 
 
 def client_main(uri: str):
@@ -133,7 +132,7 @@ def client_main(uri: str):
 
     try:  # Check if server is online
         ws.connect(uri)
-    except WebSocketConnectionClosedException:
+    except Exception:  # Websocket-client doesn't have exception class for ConnectionRefuserError
         print("Server if offline")
         exit()
 
@@ -142,7 +141,8 @@ def client_main(uri: str):
         try:
             register(ws)
             pair_with_user(ws)
-        except WebSocketConnectionClosedException:  # Check if server still online / responds
+        # Check if server still online / responds
+        except Exception:  # ConnectionAbortedError is not present in websocket-client
             print("Server not responding")
             exit()
     except KeyboardInterrupt:  # Proper exit on ctrl-c
@@ -167,8 +167,11 @@ def client_main(uri: str):
                 exit()
 
     except KeyboardInterrupt:  # Proper exit on ctrl-c
-        ws.send(":quit:")
-        ws.close()
+        try:
+            ws.send(":quit:")
+            ws.close()
+        except WebSocketConnectionClosedException:  # Check if server still online / responds
+            pass
 
 
 if __name__ == "__main__":
