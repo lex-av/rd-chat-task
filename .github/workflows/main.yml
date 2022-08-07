@@ -1,6 +1,6 @@
 # Standard workflow for code quality and tests
 
-name: CI
+name: ci-rd-task
 
 on: push
 
