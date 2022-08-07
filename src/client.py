@@ -121,12 +121,18 @@ def print_server_answers(ws: WebSocket) -> None:
         print(srv_answer)
 
 
-if __name__ == "__main__":
+def client_main(uri: str):
+    """
+    Client main script
+
+    :param uri: server uri
+    :return:
+    """
     # Initialise server websocket
     ws = websocket.WebSocket()
 
     try:  # Check if server is online
-        ws.connect("ws://localhost:2024")
+        ws.connect(uri)
     except WebSocketConnectionClosedException:
         print("Server if offline")
         exit()
@@ -163,3 +169,7 @@ if __name__ == "__main__":
     except KeyboardInterrupt:  # Proper exit on ctrl-c
         ws.send(":quit:")
         ws.close()
+
+
+if __name__ == "__main__":
+    pass

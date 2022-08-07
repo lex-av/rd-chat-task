@@ -118,16 +118,19 @@ async def user_connection_handler(user_websocket: WebSocketServerProtocol):
         print("User connection failed")
 
 
-async def main():
-    async with websockets.serve(user_connection_handler, "localhost", 2024, ping_interval=None):
+async def run_server(ip: str, port: int):
+    async with websockets.serve(user_connection_handler, ip, port, ping_interval=None):
         await asyncio.Future()  # run forever
 
 
-if __name__ == "__main__":
-    print("server started ...")
-    print("awaiting")
+def server_main(ip, port):
     try:
-        asyncio.run(main())
+        asyncio.run(run_server(ip, port))
+
     except KeyboardInterrupt:
         print("stopping server")
         exit()
+
+
+if __name__ == "__main__":
+    pass
