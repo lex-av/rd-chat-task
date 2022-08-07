@@ -123,14 +123,5 @@ async def run_server(ip: str, port: int):
         await asyncio.Future()  # run forever
 
 
-def server_main(ip, port):
-    try:
-        asyncio.run(run_server(ip, port))
-
-    except KeyboardInterrupt:
-        print("stopping server")
-        exit()
-
-
 if __name__ == "__main__":
     pass

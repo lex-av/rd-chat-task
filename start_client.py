@@ -9,3 +9,7 @@ from src.client import client_main
 def main(ip, port):
     uri = f"ws://{ip}:{port}"
     client_main(uri)
+
+
+if __name__ == "__main__":
+    main()
