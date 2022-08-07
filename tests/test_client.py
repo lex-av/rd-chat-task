@@ -1,6 +1,6 @@
 import pytest
 
-from src.client import generate_verification_msg, verify_username
+from client.client_utils import generate_verification_msg, verify_username
 
 verify_username_test_data = [
     ("normal", 0),

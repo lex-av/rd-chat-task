@@ -2,7 +2,7 @@ import asyncio
 
 import click
 
-from src.server import run_server
+from server.server_utils import run_server
 
 
 @click.command()

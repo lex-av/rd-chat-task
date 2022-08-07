@@ -1,6 +1,6 @@
 import click
 
-from src.client import client_main
+from client.client_utils import client_main
 
 
 @click.command()
