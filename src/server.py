@@ -60,9 +60,11 @@ async def register_user(user_ws: WebSocketServerProtocol, users_mapping: dict) -
 
 async def pair_users(user_ws: WebSocketServerProtocol, users_mapping: dict) -> str:
     """
+    Pairs connected user (sender) with already registered user from user_mapping.
+    Actually can properly connect more than 2 users with no exceptions
 
-    :param user_ws:
-    :param users_mapping:
+    :param user_ws: Сonnected user's websocket
+    :param users_mapping: Server mapping from username to it's websocket
     :return:
     """
 
@@ -109,7 +111,7 @@ async def user_connection_handler(user_websocket: WebSocketServerProtocol):
         except websockets.ConnectionClosedOK:  # Handle user disconnect while messaging
             remove_user(sender, USERS_MAPPING)
             if len(USERS_MAPPING) > 0:  # Proper user quit and disconnect
-                await USERS_MAPPING[recipient].send("[server] User left")
+                await USERS_MAPPING[recipient].send(f"[server] User {sender} left")
             print(sender, " disconnected")
 
     except websockets.ConnectionClosedError:  # Handle user register fail
