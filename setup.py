@@ -7,8 +7,8 @@ setuptools.setup(
     description="Command line chat server and client",
     long_description="Command line chat server and client",
     packages=["client", "server"],
-    python_requires=">=3.9.13",
-    install_requires=["websocket-client>=1.3.3", "websockets>=10.3"],
+    python_requires=">=3.9.5",
+    install_requires=["websocket-client>=1.3.3", "websockets>=10.3", "click>=8.1.3"],
     entry_points={
         "console_scripts": [
             "client = client.start_client:main",
