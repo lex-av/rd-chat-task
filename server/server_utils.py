@@ -101,6 +101,7 @@ async def user_connection_handler(user_websocket: WebSocketServerProtocol):
     """
 
     try:
+        # User register (sender) and pair with another user (recipient)
         sender = await register_user(user_websocket, USERS_MAPPING)
         logging.info(f"{sender} connected")
         recipient = await pair_users(user_websocket, USERS_MAPPING)
@@ -108,18 +109,24 @@ async def user_connection_handler(user_websocket: WebSocketServerProtocol):
 
         try:
             while 1:
+                # Messaging session
                 sender_data = await user_websocket.recv()
 
+                # Quit message from user
                 if sender_data == ":quit:" or len(USERS_MAPPING) < 2:
                     raise websockets.ConnectionClosedOK(1000, 1000)
 
+                # Formation of message from sender to recipient
+                # and acceptance message to sender
                 sender_msg = f"[{sender}] " + sender_data
                 syslog_logger.info(sender_msg)
                 msg_to_sender = f"[server] Message sent to user {recipient}"
 
+                # Getting websocket objects from server mapping
                 sender_ws = USERS_MAPPING[sender]
                 recipient_ws = USERS_MAPPING[recipient]
 
+                # Sending formed messages to sender and recipient
                 await recipient_ws.send(sender_msg)
                 await sender_ws.send(msg_to_sender)
 
