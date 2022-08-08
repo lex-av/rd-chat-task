@@ -1,9 +1,23 @@
 import asyncio
+import logging
+import logging.handlers
 
 import websockets
 from websockets import WebSocketServerProtocol
 
 USERS_MAPPING = {}  # Maps username to it's websocket
+
+# syslog_logger = logging.getLogger("server_logger")
+# syslog_logger.setLevel(logging.INFO)
+# handler = logging.handlers.SysLogHandler(address = '/dev/log')
+# formatter = logging.Formatter("%(asctime)s %(message)s")
+# handler.setFormatter(formatter)
+# syslog_logger.addHandler(handler)
+
+logging.basicConfig(
+    format="%(asctime)s %(message)s",
+    level=logging.INFO,
+)
 
 
 async def add_user(user_websocket: WebSocketServerProtocol, user_name: str, users_mapping: dict) -> bool:
@@ -88,9 +102,9 @@ async def user_connection_handler(user_websocket: WebSocketServerProtocol):
 
     try:
         sender = await register_user(user_websocket, USERS_MAPPING)
-        print(f"{sender} connected")
+        logging.info(f"{sender} connected")
         recipient = await pair_users(user_websocket, USERS_MAPPING)
-        print(f"{sender} paired with {recipient}")
+        logging.info(f"{sender} paired with {recipient}")
 
         try:
             while 1:
@@ -101,7 +115,7 @@ async def user_connection_handler(user_websocket: WebSocketServerProtocol):
 
                 sender_msg = f"[{sender}] " + sender_data
                 msg_to_sender = f"[server] Message sent to user {recipient}"
-
+                logging.info(sender_msg)
                 sender_ws = USERS_MAPPING[sender]
                 recipient_ws = USERS_MAPPING[recipient]
 
@@ -112,10 +126,10 @@ async def user_connection_handler(user_websocket: WebSocketServerProtocol):
             remove_user(sender, USERS_MAPPING)
             if len(USERS_MAPPING) > 0:  # Proper user quit and disconnect
                 await USERS_MAPPING[recipient].send(f"[server] User {sender} left")
-            print(sender, " disconnected")
+            logging.info(f"{sender} disconnected")
 
     except websockets.ConnectionClosedError:  # Handle user register fail
-        print("User connection failed")
+        logging.info("User connection failed")
 
 
 async def run_server(ip: str, port: int):

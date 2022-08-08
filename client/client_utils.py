@@ -116,7 +116,7 @@ def print_server_answers(ws: WebSocket) -> None:
         try:
             srv_answer = ws.recv()
             print(srv_answer)
-        except WebSocketConnectionClosedException:  # Standalone exception catch for thread
+        except Exception:  # Standalone exception catch for thread (strange thread exception was caused, used Exception)
             break
 
 
@@ -150,7 +150,7 @@ def client_main(uri: str):
 
     # Launch thread to print server messages
     msg_thread = threading.Thread(target=print_server_answers, args=[ws])
-    msg_thread.daemon = True  # For ctrl-c termination
+    msg_thread.daemon = True  # For child thread ctrl-c termination with main thread
     msg_thread.start()
 
     # Input and send message to server

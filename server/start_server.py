@@ -14,7 +14,6 @@ def main(ip, port):
         asyncio.run(run_server(ip, port))
 
     except KeyboardInterrupt:
-        print("stopping server")
         exit()
 
 
