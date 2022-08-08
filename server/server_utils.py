@@ -7,12 +7,12 @@ from websockets import WebSocketServerProtocol
 
 USERS_MAPPING = {}  # Maps username to it's websocket
 
-# syslog_logger = logging.getLogger("server_logger")
-# syslog_logger.setLevel(logging.INFO)
-# handler = logging.handlers.SysLogHandler(address = '/dev/log')
-# formatter = logging.Formatter("%(asctime)s %(message)s")
-# handler.setFormatter(formatter)
-# syslog_logger.addHandler(handler)
+syslog_logger = logging.getLogger("server_logger")
+syslog_logger.setLevel(logging.INFO)
+handler = logging.handlers.SysLogHandler(address="/dev/log")
+formatter = logging.Formatter("%(asctime)s %(message)s")
+handler.setFormatter(formatter)
+syslog_logger.addHandler(handler)
 
 logging.basicConfig(
     format="%(asctime)s %(message)s",
@@ -114,8 +114,9 @@ async def user_connection_handler(user_websocket: WebSocketServerProtocol):
                     raise websockets.ConnectionClosedOK(1000, 1000)
 
                 sender_msg = f"[{sender}] " + sender_data
+                syslog_logger.info(sender_msg)
                 msg_to_sender = f"[server] Message sent to user {recipient}"
-                logging.info(sender_msg)
+
                 sender_ws = USERS_MAPPING[sender]
                 recipient_ws = USERS_MAPPING[recipient]
 
