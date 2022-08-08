@@ -1,4 +1,4 @@
-atomicwrites==1.4.0
+﻿atomicwrites==1.4.0
 attrs==21.4.0
 black==21.12b0
 cfgv==3.3.1
@@ -22,7 +22,6 @@ pre-commit==2.16.0
 py==1.11.0
 pycodestyle==2.8.0
 pyflakes==2.4.0
-pynput==1.7.6
 pyparsing==3.0.6
 pytest==6.2.5
 pytest-cov==3.0.0

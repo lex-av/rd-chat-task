@@ -133,7 +133,10 @@ async def user_connection_handler(user_websocket: WebSocketServerProtocol):
         except websockets.ConnectionClosedOK:  # Handle user disconnect while messaging
             remove_user(sender, USERS_MAPPING)
             if len(USERS_MAPPING) > 0:  # Proper user quit and disconnect
-                await USERS_MAPPING[recipient].send(f"[server] User {sender} left")
+                try:  # Sometimes recipient leaves first and no longer exists in server mapping
+                    await USERS_MAPPING[recipient].send(f"[server] User {sender} left")
+                except KeyError:
+                    await USERS_MAPPING[sender].send(f"[server] User {sender} left")
             logging.info(f"{sender} disconnected")
 
     except websockets.ConnectionClosedError:  # Handle user register fail
